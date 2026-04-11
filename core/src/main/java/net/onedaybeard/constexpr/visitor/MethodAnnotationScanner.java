@@ -1,18 +1,17 @@
 package net.onedaybeard.constexpr.visitor;
 
+import net.onedaybeard.constexpr.AsmUtil;
 import net.onedaybeard.constexpr.inspect.MethodDescriptor;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-
 import java.lang.annotation.Annotation;
 
-public class MethodAnnotationScanner extends MethodVisitor implements Opcodes {
+public class MethodAnnotationScanner extends MethodVisitor {
 	private final MethodDescriptor descriptor;
 	private AnnotationScanner<MethodDescriptor> scanner;
 
 	public MethodAnnotationScanner(MethodVisitor mv, MethodDescriptor descriptor) {
-		super(ASM5, mv);
+		super(AsmUtil.ASM_API, mv);
 		this.descriptor = descriptor;
 	}
 

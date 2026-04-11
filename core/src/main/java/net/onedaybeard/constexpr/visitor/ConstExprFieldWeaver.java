@@ -1,18 +1,21 @@
 package net.onedaybeard.constexpr.visitor;
 
+import net.onedaybeard.constexpr.AsmUtil;
 import net.onedaybeard.constexpr.ConstExpr;
 import net.onedaybeard.constexpr.inspect.ClassMetadata;
-import org.objectweb.asm.*;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Type;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 
-public class ConstExprFieldWeaver extends ClassVisitor implements Opcodes {
+public class ConstExprFieldWeaver extends ClassVisitor {
 	private final ClassMetadata metadata;
 
 	public ConstExprFieldWeaver(ClassMetadata metadata, ClassVisitor cv) {
-		super(ASM5, cv);
+		super(AsmUtil.ASM_API, cv);
 		this.metadata = metadata;
 	}
 
@@ -64,11 +67,11 @@ public class ConstExprFieldWeaver extends ClassVisitor implements Opcodes {
 		return type.getDeclaredField(name);
 	}
 
-	static class AnnotationRemoverVisitor extends FieldVisitor implements Opcodes {
+	static class AnnotationRemoverVisitor extends FieldVisitor {
 		private final String descriptor;
 
 		public AnnotationRemoverVisitor(Class<? extends Annotation> annotation, FieldVisitor fv) {
-			super(ASM5, fv);
+			super(AsmUtil.ASM_API, fv);
 			descriptor = Type.getDescriptor(annotation);
 		}
 

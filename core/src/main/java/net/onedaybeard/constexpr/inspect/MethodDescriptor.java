@@ -2,7 +2,6 @@ package net.onedaybeard.constexpr.inspect;
 
 import net.onedaybeard.constexpr.InvalidConstExprException;
 
-import static java.lang.reflect.Modifier.FINAL;
 import static java.lang.reflect.Modifier.STATIC;
 
 public class MethodDescriptor {

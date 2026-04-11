@@ -10,6 +10,11 @@ import java.io.*;
 public final class AsmUtil {
 	private AsmUtil() {}
 
+	/**
+	 * OW2 ASM visitor API level for {@link org.objectweb.asm.ClassVisitor} / {@link org.objectweb.asm.MethodVisitor} constructors.
+	 */
+	public static final int ASM_API = Opcodes.ASM9;
+
 	public static ClassNode classNode(Class<?> klazz) {
 		return classNode(classReader(klazz));
 	}
@@ -23,7 +28,7 @@ public final class AsmUtil {
 	}
 
 	public static ClassNode classNode(ClassReader cr) {
-		ClassNode cn = new ClassNode(Opcodes.ASM5);
+		ClassNode cn = new ClassNode(ASM_API);
 		cr.accept(cn, 0);
 		return cn;
 	}

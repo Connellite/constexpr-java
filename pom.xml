@@ -13,7 +13,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<asm.version>9.8</asm.version>
+		<!-- Keep in sync with AsmUtil.ASM_API -->
+		<asm.version>9.9.1</asm.version>
 	</properties>
 
 	<scm>

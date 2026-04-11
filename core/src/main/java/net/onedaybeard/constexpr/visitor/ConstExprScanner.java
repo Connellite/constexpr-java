@@ -1,16 +1,19 @@
 package net.onedaybeard.constexpr.visitor;
 
+import net.onedaybeard.constexpr.AsmUtil;
 import net.onedaybeard.constexpr.ConstExpr;
 import net.onedaybeard.constexpr.inspect.FieldDescriptor;
 import net.onedaybeard.constexpr.inspect.ClassMetadata;
 import net.onedaybeard.constexpr.inspect.MethodDescriptor;
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
 
-public class ConstExprScanner extends ClassVisitor implements Opcodes {
-	private ClassMetadata metadata;
+public class ConstExprScanner extends ClassVisitor {
+	private final ClassMetadata metadata;
 
 	public ConstExprScanner(ClassMetadata metadata) {
-		super(ASM5);
+		super(AsmUtil.ASM_API);
 		this.metadata = metadata;
 	}
 
@@ -24,10 +27,8 @@ public class ConstExprScanner extends ClassVisitor implements Opcodes {
 		MethodDescriptor descriptor = new MethodDescriptor(access, name, desc, signature, exceptions);
 		metadata.add(descriptor);
 
-		MethodVisitor mv = new MethodAnnotationScanner(null, descriptor)
-			.scanFor(ConstExpr.class, md -> md.isConstExpr = true);
-
-		return mv;
+        return new MethodAnnotationScanner(null, descriptor)
+            .scanFor(ConstExpr.class, md -> md.isConstExpr = true);
 	}
 
 	@Override

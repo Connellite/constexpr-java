@@ -6,7 +6,6 @@ import net.onedaybeard.constexpr.inspect.MethodDescriptor;
 import net.onedaybeard.constexpr.transformer.CinitConstExprTransformer;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LineNumberNode;
@@ -17,11 +16,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class ConstExprMethodWeaver extends ClassVisitor implements Opcodes {
+public class ConstExprMethodWeaver extends ClassVisitor {
 	private final ClassMetadata metadata;
 
 	public ConstExprMethodWeaver(ClassMetadata metadata, ClassVisitor cv) {
-		super(ASM5, cv);
+		super(AsmUtil.ASM_API, cv);
 		this.metadata = metadata;
 	}
 

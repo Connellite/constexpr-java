@@ -1,9 +1,9 @@
 package net.onedaybeard.constexpr.visitor;
 
+import net.onedaybeard.constexpr.AsmUtil;
 import net.onedaybeard.constexpr.inspect.FieldDescriptor;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.Opcodes;
 
 import java.lang.annotation.Annotation;
 
@@ -14,7 +14,7 @@ class FieldAnnotationScanner extends FieldVisitor {
 	public FieldAnnotationScanner(FieldVisitor fv,
 	                              FieldDescriptor field) {
 
-		super(Opcodes.ASM5, fv);
+		super(AsmUtil.ASM_API, fv);
 		this.field = field;
 	}
 
