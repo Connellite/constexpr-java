@@ -3,7 +3,7 @@ package net.onedaybeard.constexpr;
 import net.onedaybeard.constexpr.inspect.ClassMetadata;
 import net.onedaybeard.constexpr.inspect.MethodDescriptor;
 import net.onedaybeard.constexpr.visitor.ConstExprScanner;
-import net.onedaybeard.constexpr.visitor.ConstExprScannerTest;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.tree.*;
@@ -47,11 +47,15 @@ public final class TestUtil {
 
 	public static String toString(Class<?> type, String method, String desc) {
 		MethodNode mn = findMethod(type, method, desc);
-
-        return toString(mn);
+		if (mn == null) {
+			throw new IllegalArgumentException(
+				"Method not found: " + method + (desc != null ? " " + desc : "") + " in " + type.getName());
+		}
+		return toString(mn);
 	}
 
 	public static String toString(MethodNode mn) {
+		Objects.requireNonNull(mn, "mn");
 		TraceMethodVisitor tcv = new TraceMethodVisitor(null, new Textifier());
 		mn.accept(tcv);
 
@@ -65,7 +69,7 @@ public final class TestUtil {
 		return sw.toString();
 	}
 
-	public static MethodNode findMethod(Class<?> type, String method, String desc) {
+	public static @Nullable MethodNode findMethod(Class<?> type, String method, String desc) {
 		List<MethodNode> methods = AsmUtil.classNode(type).methods;
 		return methods.stream()
 			.filter(m -> m.name.equals(method) && (desc == null || m.desc.equals(desc)))
@@ -85,8 +89,12 @@ public final class TestUtil {
 	}
 
 	public static ClassMetadata scan(Class<?> klazz) throws Exception {
-		String classResource = "/" + klazz.getName().replace('.', '/') + ".class";
-		return scan(klazz, ConstExprScannerTest.class.getResourceAsStream(classResource));
+		String rel = klazz.getSimpleName() + ".class";
+		InputStream in = klazz.getResourceAsStream(rel);
+		if (in == null) {
+			throw new FileNotFoundException("Missing .class resource for " + klazz.getName() + ": " + rel);
+		}
+		return scan(klazz, in);
 	}
 
 	public static ClassMetadata scan(byte[] klazz) throws Exception {
@@ -129,9 +137,9 @@ public final class TestUtil {
 	}
 
 	public static MethodDescriptor method(ClassMetadata metadata, String method) throws Exception {
-			return metadata.methods.stream()
-				.filter(md -> method.equals(md.name))
-				.findFirst()
-				.orElse(null);
+		return metadata.methods.stream()
+			.filter(md -> method.equals(md.name))
+			.findFirst()
+			.orElse(null);
 	}
 }

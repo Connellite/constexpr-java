@@ -6,15 +6,7 @@ import net.onedaybeard.constexpr.inspect.MethodDescriptor;
 import net.onedaybeard.constexpr.transformer.CinitConstExprTransformer;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LineNumberNode;
-import org.objectweb.asm.tree.MethodNode;
-
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class ConstExprMethodWeaver extends ClassVisitor {
 	private final ClassMetadata metadata;
@@ -39,10 +31,10 @@ public class ConstExprMethodWeaver extends ClassVisitor {
 				&& (md.signature == null || md.signature.equals(signature))
 				&& Arrays.equals(md.exceptions, exceptions));
 
-		if (AsmUtil.isStaticInitizalizer(name, desc)) {
+		if (AsmUtil.isStaticInitializer(name, desc)) {
 			MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
 			MethodDescriptor descriptor = metadata.methods.stream()
-				.filter(AsmUtil::isStaticInitizalizer)
+				.filter(AsmUtil::isStaticInitializer)
 				.findFirst()
 				.get();
 
@@ -52,14 +44,5 @@ public class ConstExprMethodWeaver extends ClassVisitor {
 		} else {
 			return super.visitMethod(access, name, desc, signature, exceptions);
 		}
-	}
-
-
-	static List<AbstractInsnNode> filterBodyNoDebug(MethodNode mn) {
-		Iterable<AbstractInsnNode> iterable = () -> mn.instructions.iterator();
-		return StreamSupport.stream(iterable.spliterator(), false)
-			.filter(i -> !(i instanceof LabelNode))
-			.filter(i -> !(i instanceof LineNumberNode))
-			.collect(Collectors.toList());
 	}
 }

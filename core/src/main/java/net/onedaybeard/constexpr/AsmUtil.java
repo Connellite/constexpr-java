@@ -35,7 +35,11 @@ public final class AsmUtil {
 
 	public static ClassReader classReader(Class<?> klazz) {
 		String resourceName = "/" + klazz.getName().replace('.', '/') + ".class";
-		return classReader(klazz.getResourceAsStream(resourceName));
+		InputStream in = klazz.getResourceAsStream(resourceName);
+		if (in == null) {
+			throw new IllegalArgumentException("Missing bytecode resource for " + klazz.getName() + " (" + resourceName + ")");
+		}
+		return classReader(in);
 	}
 
 	public static ClassReader classReader(InputStream in) {
@@ -59,11 +63,11 @@ public final class AsmUtil {
 		return classReader(new ByteArrayInputStream(transform));
 	}
 
-	public static boolean isStaticInitizalizer(MethodDescriptor md) {
-		return isStaticInitizalizer(md.name, md.desc);
+	public static boolean isStaticInitializer(MethodDescriptor md) {
+		return isStaticInitializer(md.name, md.desc);
 	}
 
-	public static boolean isStaticInitizalizer(String name, String desc) {
+	public static boolean isStaticInitializer(String name, String desc) {
 		return "<clinit>".equals(name) && "()V".equals(desc);
 	}
 }

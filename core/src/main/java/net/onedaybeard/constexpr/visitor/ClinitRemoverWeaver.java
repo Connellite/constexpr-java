@@ -18,7 +18,7 @@ public class ClinitRemoverWeaver extends ClassVisitor {
 	                                 String[] exceptions) {
 
 
-		if (AsmUtil.isStaticInitizalizer(name, desc)) {
+		if (AsmUtil.isStaticInitializer(name, desc)) {
 			return null;
 		} else {
 			return super.visitMethod(access, name, desc, signature, exceptions);

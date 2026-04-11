@@ -15,7 +15,7 @@ import static org.junit.Assert.assertNull;
 public class ClinitAssertionTest {
 
 	@Test
-	public void test_basic_cinit() throws Exception {
+	public void test_basic_cinit() {
 		MethodNode clinit = TestUtil.findMethod(MinimalStaticInitializer.class, "<clinit>", "()V");
 		List<AbstractInsnNode> nodes = TestUtil.filterBodyNoDebug(clinit);
 
@@ -24,7 +24,7 @@ public class ClinitAssertionTest {
 	}
 
 	@Test
-	public void test_no_cinit() throws Exception {
+	public void test_no_cinit() {
 		assertNull(TestUtil.findMethod(NoStaticInitializer.class, "<clinit>", "()V"));
 	}
 }

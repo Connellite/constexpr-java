@@ -33,9 +33,28 @@ public class ConstExprScannerTest {
 
 		List<FieldDescriptor> fields = scan.fields;
 		assertEquals(2, fields.size());
-
-		assertEquals(2, fields.size());
 		assertEquals("s1", fields.get(0).name);
+	}
+
+	@Test
+	public void test_scan_class_without_const_expr() throws Exception {
+		ClassMetadata scan = scan(NoConstExpr.class);
+		assertFalse(scan.containsConstExpr());
+		assertEquals(0, scan.fields.stream().filter(f -> f.isConstExpr).count());
+		assertEquals(0, scan.methods.stream().filter(m -> m.isConstExpr).count());
+	}
+
+	@Test
+	public void test_scan_two_runtime_strings() throws Exception {
+		ClassMetadata scan = scan(TwoRuntimeStrings.class);
+		assertEquals(2, scan.fields.stream().filter(f -> f.isConstExpr && "Ljava/lang/String;".equals(f.desc)).count());
+	}
+
+	@Test
+	public void test_scan_int_and_runtime_string() throws Exception {
+		ClassMetadata scan = scan(IntAndRuntimeString.class);
+		long constexprFields = scan.fields.stream().filter(f -> f.isConstExpr).count();
+		assertEquals(2, constexprFields);
 	}
 
 	@Test(expected = InvalidConstExprException.class)
