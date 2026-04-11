@@ -51,9 +51,9 @@ public class ConstExprScanner extends ClassVisitor implements Opcodes {
 	public void visitEnd() {
 		super.visitEnd();
 
-		metadata.fields.stream()
+		metadata.fields
 			.forEach(FieldDescriptor::validate);
-		metadata.methods.stream()
+		metadata.methods
 			.forEach(MethodDescriptor::validate);
 	}
 }

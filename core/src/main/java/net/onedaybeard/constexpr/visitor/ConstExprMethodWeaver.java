@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class ConstExprMethodWeaver extends ClassVisitor implements Opcodes {
-	private ClassMetadata metadata;
+	private final ClassMetadata metadata;
 
 	public ConstExprMethodWeaver(ClassMetadata metadata, ClassVisitor cv) {
 		super(ASM5, cv);

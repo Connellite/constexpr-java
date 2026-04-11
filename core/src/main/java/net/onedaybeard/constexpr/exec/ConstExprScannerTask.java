@@ -7,11 +7,10 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Type;
 
-import java.io.IOException;
 import java.nio.file.Path;
 
 public class ConstExprScannerTask extends CallableVisitor<ClassMetadata> {
-	private Path path;
+	private final Path path;
 
 	public ConstExprScannerTask(Path p) {
 		super(p.toFile());
@@ -19,8 +18,8 @@ public class ConstExprScannerTask extends CallableVisitor<ClassMetadata> {
 	}
 
 	@Override
-	protected ClassMetadata process(ClassReader cr) throws IOException {
-		ClassMetadata info = new ClassMetadata(Type.getType(cr.getClassName()), null);
+	protected ClassMetadata process(ClassReader cr) {
+		ClassMetadata info = new ClassMetadata(Type.getObjectType(cr.getClassName()), null);
 		info.path = path.toFile().getAbsolutePath();
 
 		ClassVisitor cv = new ConstExprScanner(info);

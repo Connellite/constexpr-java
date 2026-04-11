@@ -33,14 +33,14 @@ public class ConstExprTransformerTest {
 		FieldDescriptor timestampB = scanB.field("timestamp");
 		FieldDescriptor seedB = scanB.field("seed");
 
-		assertEquals(true, timestampA.isConstExpr);
-		assertEquals(true, seedA.isConstExpr);
+        assertTrue(timestampA.isConstExpr);
+        assertTrue(seedA.isConstExpr);
 		assertNull(timestampA.value);
 		assertNull(seedA.value);
 		assertNotNull(method(scanA, "generateSeed"));
 
-		assertEquals(false, timestampB.isConstExpr);
-		assertEquals(false, seedB.isConstExpr);
+        assertFalse(timestampB.isConstExpr);
+        assertFalse(seedB.isConstExpr);
 		assertNotNull(timestampB.value);
 		assertNotNull(seedB.value);
 		assertNull(method(scanB, "generateSeed"));
@@ -97,7 +97,7 @@ public class ConstExprTransformerTest {
 		if (mn != null) {
 			assertEquals(TestUtil.toString(mn), count, filterBodyNoDebug(mn).size());
 		} else {
-			assertEquals("not found: " + method, count, 0);
+			assertEquals("not found: " + method, 0, count);
 		}
 	}
 

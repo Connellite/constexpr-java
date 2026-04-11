@@ -38,7 +38,7 @@ public final class ClassUtil implements Opcodes
 		if (!root.isDirectory())
 			throw new IllegalArgumentException(root + " must be a folder.");
 		
-		List<File> klazzes = new ArrayList<File>();
+		List<File> klazzes = new ArrayList<>();
 		addFiles(klazzes, root);
 			
 		return klazzes;

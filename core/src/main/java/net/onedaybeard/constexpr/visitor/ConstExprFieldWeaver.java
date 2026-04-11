@@ -9,7 +9,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 
 public class ConstExprFieldWeaver extends ClassVisitor implements Opcodes {
-	private ClassMetadata metadata;
+	private final ClassMetadata metadata;
 
 	public ConstExprFieldWeaver(ClassMetadata metadata, ClassVisitor cv) {
 		super(ASM5, cv);
@@ -54,7 +54,8 @@ public class ConstExprFieldWeaver extends ClassVisitor implements Opcodes {
 				ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
 				String descriptor = metadata.type.getDescriptor();
-				type = classLoader.loadClass(descriptor.replace('/', '.'));
+				String className = Type.getType(descriptor).getClassName();
+				type = classLoader.loadClass(className);
 			} catch (ClassNotFoundException e) {
 				throw new RuntimeException(e);
 			}

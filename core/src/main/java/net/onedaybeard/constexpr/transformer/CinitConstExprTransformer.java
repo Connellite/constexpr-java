@@ -15,7 +15,7 @@ public class CinitConstExprTransformer extends MethodNode implements Opcodes {
 	private final ClassMetadata metadata;
 	private final MethodVisitor mv;
 
-	private static final Class[] INSN_NODE_DECREMENTORS = new Class[] {
+	private static final Class<?>[] INSN_NODE_DECREMENTORS = new Class[] {
 		LdcInsnNode.class,
 		MethodInsnNode.class
 	};
@@ -60,41 +60,40 @@ public class CinitConstExprTransformer extends MethodNode implements Opcodes {
 
 
 	private int endIndexOf(FieldDescriptor fd) {
-		ListIterator<AbstractInsnNode> it = instructions.iterator();
-		while (it.hasNext()) {
-			AbstractInsnNode node = it.next();
-			if (node instanceof FieldInsnNode) {
-				FieldInsnNode fin = (FieldInsnNode) node;
-				if (fd.name.equals(fin.name)) {
-					return instructions.indexOf(fin);
-				}
-			}
-		}
+        for (AbstractInsnNode node : instructions) {
+            if (node instanceof FieldInsnNode fin) {
+                if (fd.name.equals(fin.name)) {
+                    return instructions.indexOf(fin);
+                }
+            }
+        }
 
 		throw new RuntimeException("what the...");
 	}
 
 	private int beginIndexOf(int endIndex) {
 		int i = endIndex - 1;
-		for (int remaining = 1; remaining != 0; i--) {
+		while (i >= 0) {
 			AbstractInsnNode insn = instructions.get(i);
 			if (insn instanceof InsnNode) {
-				remaining++;
-			} else if (isInsnNodeDecrementing(insn)) {
-				remaining--;
+				i--;
+				continue;
 			}
+			if (isInsnNodeDecrementing(insn)) {
+				return i;
+			}
+			i--;
 		}
-
-		return i + 1; // +1 due to final decrement in loop
+		throw new RuntimeException("Can't find begin of initializer for field: expected MethodInsnNode before PUTSTATIC");
 	}
 
 	private int beginStringIndexOf(int endIndex) {
 		int i = endIndex - 1;
-		while (i > 0) {
+		while (i >= 0) {
 			AbstractInsnNode insn = instructions.get(i);
-			if (insn instanceof TypeInsnNode) {
-				TypeInsnNode tin = (TypeInsnNode) insn;
-				if (NEW == tin.getOpcode() && "java/lang/StringBuilder".equals(tin.desc)) {
+			if (insn instanceof TypeInsnNode tin) {
+                if (NEW == tin.getOpcode() &&
+						("java/lang/String".equals(tin.desc) || "java/lang/StringBuilder".equals(tin.desc))) {
 					return i;
 				}
 			} else {
@@ -102,7 +101,7 @@ public class CinitConstExprTransformer extends MethodNode implements Opcodes {
 			}
 		}
 
-		throw new RuntimeException();
+		throw new RuntimeException("Can't find begin of String initializer (String StringBuilder NEW) in <cinit>");
 	}
 
 	private static boolean isInsnNodeDecrementing(AbstractInsnNode insn) {

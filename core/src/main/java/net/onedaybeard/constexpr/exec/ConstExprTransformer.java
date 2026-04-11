@@ -12,7 +12,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
 import java.io.File;
-import java.io.IOException;
 
 public class ConstExprTransformer extends CallableVisitor<byte[]> {
 	private final ClassMetadata metadata;
@@ -25,7 +24,7 @@ public class ConstExprTransformer extends CallableVisitor<byte[]> {
 	}
 
 	@Override
-	protected byte[] process(ClassReader cr) throws IOException {
+	protected byte[] process(ClassReader cr) {
 		if (!metadata.containsConstExpr())
 			return null;
 

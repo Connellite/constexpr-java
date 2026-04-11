@@ -37,7 +37,7 @@ public class ConstExprMain {
 			.filter(ClassMetadata::containsConstExpr)
 			.map(ConstExprTransformer::new)
 			.map(executor::submit)
-			.collect(toList())
+			.toList()
 			.forEach(ConstExprMain::resolveFuture);
 		stats.transformTime = System.currentTimeMillis() - startTransform;
 
@@ -49,7 +49,7 @@ public class ConstExprMain {
 			.filter(path -> path.toString().endsWith(".class"))
 			.map(ConstExprScannerTask::new)
 			.map(executor::submit)
-			.collect(toList());
+			.toList();
 
 		return futures.stream()
 			.map(ConstExprMain::resolveFuture)

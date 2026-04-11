@@ -48,8 +48,7 @@ public final class TestUtil {
 	public static String toString(Class<?> type, String method, String desc) {
 		MethodNode mn = findMethod(type, method, desc);
 
-		String s = toString(mn);
-		return s;
+        return toString(mn);
 	}
 
 	public static String toString(MethodNode mn) {
@@ -80,7 +79,7 @@ public final class TestUtil {
 
 		CheckClassAdapter.verify(new ClassReader(bytes), false, printer);
 		String result = sw.toString();
-		if (result.length() > 0) {
+		if (!result.isEmpty()) {
 			throw new RuntimeException(result);
 		}
 	}

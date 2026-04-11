@@ -16,7 +16,6 @@ import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
 import static org.apache.maven.plugins.annotations.LifecyclePhase.PROCESS_CLASSES;
 import static org.apache.maven.plugins.annotations.ResolutionScope.COMPILE_PLUS_RUNTIME;
 
@@ -65,7 +64,7 @@ public class ConstExprMojo extends AbstractMojo {
 
 		List<ClassMetadata> transformed = stats.scanned.stream()
 			.filter(ClassMetadata::containsConstExpr)
-			.collect(toList());
+			.toList();
 
 		logf(keyValue(
 			"Scanned " + stats.scanned.size() + " classes",
@@ -104,8 +103,7 @@ public class ConstExprMojo extends AbstractMojo {
 				.stream()
 				.map(File::new)
 				.map(ConstExprMojo::toUrl)
-				.collect(toList())
-				.toArray(new URL[0]);
+				.toArray(URL[]::new);
 
 			ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
 			URLClassLoader classLoader = URLClassLoader.newInstance(urls, parentClassLoader);

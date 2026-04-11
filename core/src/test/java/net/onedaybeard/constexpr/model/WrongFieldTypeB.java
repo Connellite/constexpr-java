@@ -1,6 +1,5 @@
 package net.onedaybeard.constexpr.model;
 
-import javafx.geometry.Rectangle2D;
 import net.onedaybeard.constexpr.ConstExpr;
 
 public class WrongFieldTypeB {
