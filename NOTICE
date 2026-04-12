@@ -1,0 +1,8 @@
+constexpr-java-17 (fork)
+Copyright 2026 connellite
+
+This project is a fork of constexpr-java by Adrian Papari (junkdog):
+  https://github.com/junkdog/constexpr-java
+
+Original work is copyright its respective authors and licensed under the
+Apache License, Version 2.0 (see LICENSE).

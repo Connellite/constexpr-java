@@ -1,7 +1,13 @@
+# constexpr-java-17
+
+This is a fork of [constexpr-java](https://github.com/junkdog/constexpr-java) by junkdog, updated to Java 17 and ASM 9.x.
+
+Maven coordinates are `io.github.connellite` with runtime API in package `io.github.connellite.constexpr`. See [NOTICE](NOTICE) for attribution.
+
 ## `@ConstExpr`
 
 Simulates `constexpr` from C++11, build-time code-execution, from
-[cppreference.com][cppref]: 
+[cppreference.com][cppref]:
 
 > The constexpr specifier declares that it is possible
 > to evaluate the value of the function or variable at
@@ -11,13 +17,13 @@ Simulates `constexpr` from C++11, build-time code-execution, from
 #### But Why?
 - embed build-time variables directly into class files
 - naive string obfuscation
-- maven's resource filtering can be clunky for certain use-cases 
+- maven's resource filtering can be clunky for certain use-cases
 
 
 ## Usage
 
 The API is restricted to the `@ConstExpr` annotation. The maven plugin does
-its thing using [ASM](http://asm.ow2.org/).
+its thing using [ASM](https://asm.ow2.io/).
 
 
 #### On Fields
@@ -25,7 +31,7 @@ Fields must satisfy the following prerequisiites to be eligible:
 - `static final` modifiers
 - primitive value or string.
 
-The final value is written to the transformed class. 
+The final value is written to the transformed class.
 
 
 #### On Methods
@@ -37,10 +43,12 @@ during runtime.
 #### Sample
 
 ```java
+import io.github.connellite.constexpr.ConstExpr;
+
 public class Exhibit {
     @ConstExpr // recording the time at build
     public static final long timestamp = System.currentTimeMillis();
-    
+
     @ConstExpr
     public static final long seed = generateSeed();
 
@@ -60,18 +68,18 @@ public class Exhibit {
 ```xml
 <dependencies>
     <dependency>
-        <groupId>net.onedaybeard.constexpr</groupId>
+        <groupId>io.github.connellite</groupId>
         <artifactId>constexpr-api</artifactId>
-        <version>0.1.0</version>
+        <version>0.2.0</version>
     </dependency>
 </dependencies>
 
 <build>
     <plugins>
         <plugin>
-            <groupId>net.onedaybeard.constexpr</groupId>
+            <groupId>io.github.connellite</groupId>
             <artifactId>constexpr-maven-plugin</artifactId>
-            <version>0.1.0</version>
+            <version>0.2.0</version>
             <executions>
                 <execution>
                     <id>transform</id>
@@ -95,16 +103,21 @@ public class Exhibit {
 Running the plugin should result in output similar to:
 
 ```
-[INFO] --- constexpr-maven-plugin:0.1.0:constexpr (transform) @ map ---
+[INFO] --- constexpr-maven-plugin:0.2.0:constexpr (transform) @ map ---
 [INFO] Scanned 499 classes ............................................... 86ms
 [INFO] Transformed 1 classes ............................................. 46ms
-[INFO] 
+[INFO]
 [INFO] @ConstExpr Log
 [INFO] ------------------------------------------------------------------------
 [INFO] s.f.m.u.BuildProperties ....................................... fields:1
 [INFO] ------------------------------------------------------------------------
-[INFO] 
+[INFO]
 ```
+
+#### Publishing / releasing
+
+- **Maven Central**: `mvn -Prelease clean deploy` with `~/.m2/settings.xml` server `central` (Sonatype token) and GPG, or the **Publish Maven Central** workflow (`.github/workflows/publish-ossrh.yml`) on release.
+- **GitHub Packages**: `mvn -Pgithub-packages clean deploy` or workflow **Publish GitHub Packages**.
 
 #### The Details
 - scan class files for `@ConstExpr` and validate
@@ -119,9 +132,9 @@ Running the plugin should result in output similar to:
   - (entries no longer required by the _constant pool_ are cleared)
 
 #### Bytecode: before and after
-- Bytecode disassembly of [PlainString.java][ps-java], [diff view][diff].
+- Bytecode disassembly of [PlainString.java][ps-java], [diff view (upstream)][diff].
 
 
  [cppref]: http://en.cppreference.com/w/cpp/language/constexpr
- [ps-java]: https://github.com/junkdog/constexpr-java/blob/d4ad613fb6dbc8a9b762af8407f0d9963485ae94/core/src/test/java/net/onedaybeard/constexpr/model/PlainString.java
+ [ps-java]: https://github.com/connellite/constexpr-java/blob/master/core/src/test/java/io/github/connellite/constexpr/model/PlainString.java
  [diff]: https://github.com/junkdog/constexpr-java/compare/reference-before...reference-after#diff-f98d296c19afdc978656a8813c42be81
