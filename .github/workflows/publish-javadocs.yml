@@ -1,0 +1,86 @@
+name: Publish Javadocs
+
+on:
+  workflow_run:
+    workflows: ["Publish Maven Central"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  publish-javadocs:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # For workflow_run, checkout the exact commit that was released.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Generate Javadoc
+        run: |
+          JAVADOC_PLUGIN_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=maven-javadoc-plugin.version)
+          mvn -B -ntp -DskipTests \
+            -DlegacyMode=true \
+            -Daggregate=false \
+            -Drelease=17 \
+            -Ddoclint=none \
+            -Dmaven.javadoc.failOnError=false \
+            "org.apache.maven.plugins:maven-javadoc-plugin:${JAVADOC_PLUGIN_VERSION}:jar"
+
+      - name: Prepare Pages artifact
+        run: |
+          mkdir -p pages
+          VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)
+          ARTIFACT_ID=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.artifactId)
+          rm -rf javadocs-extracted
+          mkdir -p javadocs-extracted
+          JAR="target/${ARTIFACT_ID}-${VERSION}-javadoc.jar"
+          if [ ! -f "$JAR" ]; then
+            echo "::warning::Javadoc jar not found: $JAR - skipping extract and version/latest copy"
+          else
+            unzip -q "$JAR" -d javadocs-extracted
+            mkdir -p "pages/$VERSION" pages/latest
+            cp -r javadocs-extracted/. "pages/$VERSION/"
+            cp -r javadocs-extracted/. pages/latest/
+          fi
+
+      - name: Create GitHub Pages index
+        run: |
+          printf '%s\n' \
+            '<!DOCTYPE html>' \
+            '<html lang="en">' \
+            '<head>' \
+            '<meta charset="utf-8">' \
+            '<title>Javadocs</title>' \
+            '<meta http-equiv="refresh" content="0; url=./latest/">' \
+            '</head>' \
+            '<body>' \
+            '<p>Redirecting to <a href="./latest/">Javadocs</a>...</p>' \
+            '</body>' \
+            '</html>' \
+            > pages/index.html
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
