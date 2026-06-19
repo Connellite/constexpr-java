@@ -1,6 +1,7 @@
 package io.github.connellite.constexpr;
 
 import io.github.connellite.constexpr.inspect.ClassMetadata;
+import io.github.connellite.constexpr.util.ConstExprClassLoaderScope;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -10,9 +11,7 @@ import org.apache.maven.project.MavenProject;
 import org.objectweb.asm.Type;
 
 import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -57,10 +56,13 @@ public class ConstExprMojo extends AbstractMojo {
 
 		// ConstExprFieldWeaver needs to reflectively resolve static fields;
 		// make the project runtime classpath available to this mojo
-		configureClassLoader(project);
-
-		ConstExprMain constExpr = new ConstExprMain();
-		ConstExprMain.Stats stats = constExpr.execute(classDirectory.getAbsolutePath());
+		ConstExprMain.Stats stats;
+		try (ConstExprClassLoaderScope ignored = ConstExprClassLoaderScope.open(projectClasspath())) {
+			ConstExprMain constExpr = new ConstExprMain();
+			stats = constExpr.execute(classDirectory.getAbsolutePath());
+		} catch (DependencyResolutionRequiredException | IOException ex) {
+			throw new MojoExecutionException("ConstExpr could not configure project classpath", ex);
+		}
 
 		List<ClassMetadata> transformed = stats.scanned.stream()
 			.filter(ClassMetadata::containsConstExpr)
@@ -95,30 +97,11 @@ public class ConstExprMojo extends AbstractMojo {
 		}
 	}
 
-	private void configureClassLoader(MavenProject project)
-			throws MojoExecutionException {
-
-		try {
-			URL[] urls = project.getRuntimeClasspathElements()
-				.stream()
-				.map(File::new)
-				.map(ConstExprMojo::toUrl)
-				.toArray(URL[]::new);
-
-			ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
-			URLClassLoader classLoader = URLClassLoader.newInstance(urls, parentClassLoader);
-			Thread.currentThread().setContextClassLoader(classLoader);
-		} catch (DependencyResolutionRequiredException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private static URL toUrl(File f) {
-		try {
-			return f.toURI().toURL();
-		} catch (MalformedURLException e) {
-			throw new RuntimeException(e);
-		}
+	private List<File> projectClasspath() throws DependencyResolutionRequiredException {
+		return project.getRuntimeClasspathElements()
+			.stream()
+			.map(File::new)
+			.toList();
 	}
 
 	private void logKeyValue(String key, Object value) {

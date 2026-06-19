@@ -6,7 +6,7 @@
 
     <groupId>io.github.connellite</groupId>
     <artifactId>constexpr-parent</artifactId>
-    <version>0.2.0</version>
+    <version>0.3</version>
     <packaging>pom</packaging>
 
     <name>constexpr-java-17</name>
@@ -54,6 +54,7 @@
     <modules>
         <module>api</module>
         <module>core</module>
+        <module>processor</module>
         <module>maven-plugin</module>
     </modules>
 

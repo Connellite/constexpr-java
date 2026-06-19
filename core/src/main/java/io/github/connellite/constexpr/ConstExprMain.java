@@ -25,23 +25,27 @@ public class ConstExprMain {
 	}
 
 	public Stats execute(String root) {
-		Stats stats = new Stats();
+		try {
+			Stats stats = new Stats();
 
-		long startScan = System.currentTimeMillis();
-		List<ClassMetadata> scanned = scan(root);
-		stats.scanned = scanned;
-		stats.scanTime = System.currentTimeMillis() - startScan;
+			long startScan = System.currentTimeMillis();
+			List<ClassMetadata> scanned = scan(root);
+			stats.scanned = scanned;
+			stats.scanTime = System.currentTimeMillis() - startScan;
 
-		long startTransform = System.currentTimeMillis();
-		scanned.stream()
-			.filter(ClassMetadata::containsConstExpr)
-			.map(ConstExprTransformer::new)
-			.map(executor::submit)
-			.toList()
-			.forEach(ConstExprMain::resolveFuture);
-		stats.transformTime = System.currentTimeMillis() - startTransform;
+			long startTransform = System.currentTimeMillis();
+			scanned.stream()
+				.filter(ClassMetadata::containsConstExpr)
+				.map(ConstExprTransformer::new)
+				.map(executor::submit)
+				.toList()
+				.forEach(ConstExprMain::resolveFuture);
+			stats.transformTime = System.currentTimeMillis() - startTransform;
 
-		return stats;
+			return stats;
+		} finally {
+			executor.shutdown();
+		}
 	}
 
 	private List<ClassMetadata> scan(String root) {
@@ -59,7 +63,10 @@ public class ConstExprMain {
 	private static <T> T resolveFuture(Future<T> future) {
 		try {
 			return future.get();
-		} catch (ExecutionException | InterruptedException e) {
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException(e.getMessage(), e);
+		} catch (ExecutionException e) {
 			throw new RuntimeException(e.getMessage(), e);
 		}
 	}
