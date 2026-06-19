@@ -7,6 +7,12 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedOptions;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.TypeElement;
+import io.github.connellite.constexpr.processor.hook.ConstExprCompilationHook;
+import io.github.connellite.constexpr.processor.hook.ConstExprPostCompile;
+import io.github.connellite.constexpr.processor.hook.JavacAccess;
+import io.github.connellite.constexpr.processor.intercept.ConstExprJavacInstaller;
+import io.github.connellite.constexpr.processor.intercept.ConstExprJavacInstaller.InstallResult;
+
 import javax.tools.Diagnostic;
 
 import java.util.Map;
@@ -15,16 +21,16 @@ import java.util.Set;
 /**
  * Annotation processor discovered via {@code META-INF/services/javax.annotation.processing.Processor}.
  * <ul>
- *     <li>javac / {@code JavaCompiler}: hooks {@code TaskListener} when possible.</li>
- *     <li>IntelliJ IDEA (JPS): post-compile polling on the final AP round.</li>
+ *     <li>javac / IntelliJ / {@code JavaCompiler}: intercepts {@code .class} output streams (Lombok-style).</li>
+ *     <li>Fallback: post-compile scan on the final AP round.</li>
  * </ul>
  */
 @SupportedAnnotationTypes("io.github.connellite.constexpr.ConstExpr")
 @SupportedOptions("constexpr.skip")
 public class ConstExprProcessor extends AbstractProcessor {
 	private boolean skip;
-	private boolean javacHookInstalled;
-	private boolean sawConstExpr;
+	private boolean streamInterceptorInstalled;
+	private boolean compilationHookInstalled;
 
 	@Override
 	public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -33,12 +39,20 @@ public class ConstExprProcessor extends AbstractProcessor {
 		if (skip) {
 			return;
 		}
+		InstallResult streamInterceptor = ConstExprJavacInstaller.installWithDiagnostics(processingEnv);
+		streamInterceptorInstalled = streamInterceptor.installed();
+		if (streamInterceptor.message() != null) {
+			reportWarning(streamInterceptor.message());
+		}
+
 		try {
-			javacHookInstalled = JavacAccess.installHook(processingEnv);
+			compilationHookInstalled = JavacAccess.installHook(processingEnv);
 		} catch (RuntimeException ex) {
-			processingEnv.getMessager().printMessage(
-				Diagnostic.Kind.WARNING,
-				ex.getMessage());
+			reportWarning(ex.getMessage());
+		}
+		if (!streamInterceptorInstalled && !compilationHookInstalled) {
+			reportWarning("ConstExpr could not install a javac integration hook; "
+				+ "the final post-compile fallback will still try to transform class output.");
 		}
 	}
 
@@ -54,13 +68,18 @@ public class ConstExprProcessor extends AbstractProcessor {
 
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-		if (!annotations.isEmpty()) {
-			sawConstExpr = true;
-		}
-		if (!skip && !javacHookInstalled && sawConstExpr && roundEnv.processingOver()) {
-			ConstExprPostCompile.schedule(processingEnv);
+		if (!skip && roundEnv.processingOver()) {
+			ConstExprPostCompile.run(processingEnv);
+			ConstExprCompilationHook.clearCompilationHookState();
 		}
 		return false;
+	}
+
+	private void reportWarning(String message) {
+		if (message == null || message.isBlank()) {
+			return;
+		}
+		processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, message);
 	}
 
 	private static boolean isSkipped(Map<String, String> options) {

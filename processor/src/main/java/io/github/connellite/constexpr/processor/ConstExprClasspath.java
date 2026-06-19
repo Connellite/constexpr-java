@@ -14,17 +14,17 @@ import java.util.List;
 /**
  * Makes compiled output and compile classpath visible for reflective field resolution in {@code constexpr-core}.
  */
-final class ConstExprClasspath {
+public final class ConstExprClasspath {
 	private ConstExprClasspath() {}
 
-	static ConstExprClassLoaderScope configure(StandardJavaFileManager fileManager) throws IOException {
+	public static ConstExprClassLoaderScope configure(StandardJavaFileManager fileManager) throws IOException {
 		List<File> entries = new ArrayList<>();
 		addLocation(fileManager, StandardLocation.CLASS_PATH, entries);
 		addLocation(fileManager, StandardLocation.CLASS_OUTPUT, entries);
 		return ConstExprClassLoaderScope.open(entries);
 	}
 
-	static ConstExprClassLoaderScope configureForOutput(Path classOutput) throws IOException {
+	public static ConstExprClassLoaderScope configureForOutput(Path classOutput) throws IOException {
 		return ConstExprClassLoaderScope.open(List.of(classOutput.toFile()));
 	}
 

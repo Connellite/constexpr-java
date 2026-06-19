@@ -11,9 +11,10 @@ import java.lang.reflect.Method;
  * <ul>
  *     <li>https://github.com/projectlombok/lombok/commit/9806e5cca4b449159ad0509dafde81951b8a8523</li>
  *     <li>https://github.com/projectlombok/lombok/blob/9806e5cca4b449159ad0509dafde81951b8a8523/src/core/lombok/javac/apt/LombokProcessor.java#L453-L484</li>
+ *     <li>https://github.com/projectlombok/lombok/blob/master/src/utils/lombok/permit/Permit.java</li>
  * </ul>
  */
-final class ConstExprPermit {
+public final class ConstExprPermit {
 	private static final String[] JAVAC_PACKAGES = {
 		"com.sun.tools.javac.api",
 		"com.sun.tools.javac.code",
@@ -34,7 +35,7 @@ final class ConstExprPermit {
 		boolean first;
 	}
 
-	static void openJavacCompilerPackages() {
+	public static void openJavacCompilerPackages() {
 		try {
 			Class.forName("java.lang.Module");
 		} catch (ClassNotFoundException e) {
@@ -100,7 +101,7 @@ final class ConstExprPermit {
 		putBooleanVolatile.invoke(unsafe, object, offset, true);
 	}
 
-	static void forceAccessible(AccessibleObject object) throws ReflectiveOperationException {
+	public static void forceAccessible(AccessibleObject object) throws ReflectiveOperationException {
 		if (object.trySetAccessible()) {
 			return;
 		}

@@ -1,8 +1,9 @@
-package io.github.connellite.constexpr.processor;
+package io.github.connellite.constexpr.processor.hook;
 
 import io.github.connellite.constexpr.ConstExprMain;
 import io.github.connellite.constexpr.exec.ConstExprScannerTask;
 import io.github.connellite.constexpr.inspect.ClassMetadata;
+import io.github.connellite.constexpr.processor.ConstExprClasspath;
 import io.github.connellite.constexpr.util.ConstExprClassLoaderScope;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -10,28 +11,21 @@ import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 /**
  * Runs {@link ConstExprMain} after .class files exist. Required for IntelliJ IDEA, whose own
  * compiler (JPS) does not fire javac {@code TaskListener} events.
  */
-final class ConstExprPostCompile {
+public final class ConstExprPostCompile {
 	private static final int MAX_ATTEMPTS = 200;
 	private static final long POLL_INTERVAL_MS = 50L;
-	private static final AtomicInteger THREAD_COUNTER = new AtomicInteger();
-
 	private ConstExprPostCompile() {}
 
-	static void schedule(ProcessingEnvironment processingEnv) {
+	public static void run(ProcessingEnvironment processingEnv) {
 		Path outputDir;
 		try {
 			outputDir = resolveClassOutput(processingEnv);
@@ -44,22 +38,23 @@ final class ConstExprPostCompile {
 			return;
 		}
 
-		ExecutorService executor = Executors.newSingleThreadExecutor(namedThreadFactory());
-		executor.submit(() -> {
-			try {
-				pollAndTransform(processingEnv, outputDir);
-			} finally {
-				executor.shutdown();
-			}
-		});
+		pollAndTransform(processingEnv, outputDir);
 	}
 
 	private static void pollAndTransform(ProcessingEnvironment processingEnv, Path outputDir) {
 		for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
 			try {
-				if (tryTransform(outputDir)) {
+				if (!hasPendingConstExpr(outputDir)) {
 					return;
 				}
+				tryTransform(outputDir);
+				if (!hasPendingConstExpr(outputDir)) {
+					return;
+				}
+			} catch (IOException ex) {
+				report(processingEnv, Diagnostic.Kind.ERROR,
+					"ConstExpr could not scan compiled classes: " + ex.getMessage());
+				return;
 			} catch (RuntimeException ex) {
 				report(processingEnv, Diagnostic.Kind.ERROR, "ConstExpr transformation failed: " + ex.getMessage());
 				return;
@@ -71,20 +66,18 @@ final class ConstExprPostCompile {
 				return;
 			}
 		}
-		report(processingEnv, Diagnostic.Kind.WARNING,
-			"ConstExpr transformation timed out waiting for compiled classes in " + outputDir);
-	}
-
-	private static ThreadFactory namedThreadFactory() {
-		return runnable -> new Thread(
-			runnable,
-			"constexpr-post-compile-" + THREAD_COUNTER.incrementAndGet());
+		try {
+			if (hasPendingConstExpr(outputDir)) {
+				report(processingEnv, Diagnostic.Kind.WARNING,
+					"ConstExpr transformation timed out waiting for compiled classes in " + outputDir);
+			}
+		} catch (IOException ex) {
+			report(processingEnv, Diagnostic.Kind.ERROR,
+				"ConstExpr could not scan compiled classes: " + ex.getMessage());
+		}
 	}
 
 	private static void report(ProcessingEnvironment processingEnv, Diagnostic.Kind kind, String message) {
-		// This runs on a background thread after the processing rounds finished, so the compiler may have
-		// already torn down its Messager. Fall back to stderr instead of letting a teardown error mask the
-		// real diagnostic.
 		try {
 			processingEnv.getMessager().printMessage(kind, message);
 		} catch (RuntimeException ex) {
@@ -92,21 +85,17 @@ final class ConstExprPostCompile {
 		}
 	}
 
-	private static boolean tryTransform(Path outputDir) {
+	private static boolean tryTransform(Path outputDir) throws IOException {
 		if (!Files.isDirectory(outputDir)) {
 			return false;
 		}
-		try {
-			if (!hasPendingConstExpr(outputDir)) {
-				return false;
-			}
-			try (ConstExprClassLoaderScope ignored = ConstExprClasspath.configureForOutput(outputDir)) {
-				new ConstExprMain().execute(outputDir.toAbsolutePath().toString());
-			}
-			return true;
-		} catch (IOException ex) {
-			throw new UncheckedIOException(ex);
+		if (!hasPendingConstExpr(outputDir)) {
+			return false;
 		}
+		try (ConstExprClassLoaderScope ignored = ConstExprClasspath.configureForOutput(outputDir)) {
+			new ConstExprMain().execute(outputDir.toAbsolutePath().toString());
+		}
+		return true;
 	}
 
 	private static boolean hasPendingConstExpr(Path outputDir) throws IOException {
@@ -132,6 +121,49 @@ final class ConstExprPostCompile {
 		URI uri = probe.toUri();
 		probe.delete();
 		Path path = Path.of(uri);
-		return Files.isDirectory(path) ? path : path.getParent();
+		Path dir = Files.isDirectory(path) ? path : path.getParent();
+		return normalizeClassOutputDir(dir);
+	}
+
+	/**
+	 * IntelliJ IDEA and some build tools place AP metadata under a {@code generated} subdirectory of
+	 * the module output, while {@code .class} files live in the parent directory.
+	 */
+	private static Path normalizeClassOutputDir(Path dir) {
+		if (dir == null) {
+			return null;
+		}
+		Path current = dir.toAbsolutePath().normalize();
+		for (int i = 0; i < 3; i++) {
+			if (containsCompiledClass(current)) {
+				return current;
+			}
+			Path fileName = current.getFileName();
+			if (fileName == null) {
+				break;
+			}
+			String name = fileName.toString();
+			if ("generated".equals(name) || "classes".equals(name) || "java".equals(name)) {
+				current = current.getParent();
+				continue;
+			}
+			break;
+		}
+		return dir.toAbsolutePath().normalize();
+	}
+
+	static Path normalizeClassOutputDirForTest(Path dir) {
+		return normalizeClassOutputDir(dir);
+	}
+
+	private static boolean containsCompiledClass(Path dir) {
+		if (!Files.isDirectory(dir)) {
+			return false;
+		}
+		try (Stream<Path> files = Files.walk(dir, 3)) {
+			return files.anyMatch(path -> path.toString().endsWith(".class"));
+		} catch (IOException ex) {
+			return false;
+		}
 	}
 }

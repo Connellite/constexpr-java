@@ -1,6 +1,9 @@
-package io.github.connellite.constexpr.processor;
+package io.github.connellite.constexpr.processor.hook;
 
 import com.sun.source.util.TaskListener;
+
+import io.github.connellite.constexpr.processor.ConstExprJavacUnwrap;
+import io.github.connellite.constexpr.processor.ConstExprPermit;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import java.lang.reflect.AccessibleObject;
@@ -9,51 +12,24 @@ import java.lang.reflect.Method;
 /**
  * Reflective access to javac internals without compile-time linkage to {@code jdk.compiler} packages.
  */
-final class JavacAccess {
-	private static final String JAVAC_PROCESSING_ENV =
-		"com.sun.tools.javac.processing.JavacProcessingEnvironment";
-
+public final class JavacAccess {
 	private JavacAccess() {}
 
 	static {
 		ConstExprPermit.openJavacCompilerPackages();
 	}
 
-	static boolean installHook(ProcessingEnvironment processingEnv) {
-		ProcessingEnvironment javacEnv = unwrapJavacEnvironment(processingEnv);
-		if (!JAVAC_PROCESSING_ENV.equals(javacEnv.getClass().getName())) {
+	public static boolean installHook(ProcessingEnvironment processingEnv) {
+		Object javacEnv = ConstExprJavacUnwrap.javacProcessingEnvironment(processingEnv);
+		if (javacEnv == null) {
 			return false;
 		}
 		try {
 			Object context = invoke(javacEnv, "getContext");
-			ConstExprCompilationHook.install(context);
-			return true;
+			return ConstExprCompilationHook.install(context);
 		} catch (ReflectiveOperationException ex) {
 			throw new IllegalStateException(compilerOptionsHint(), ex);
 		}
-	}
-
-	private static ProcessingEnvironment unwrapJavacEnvironment(ProcessingEnvironment env) {
-		if (JAVAC_PROCESSING_ENV.equals(env.getClass().getName())) {
-			return env;
-		}
-		for (Class<?> type = env.getClass(); type != null; type = type.getSuperclass()) {
-			for (java.lang.reflect.Field field : type.getDeclaredFields()) {
-				if (!ProcessingEnvironment.class.isAssignableFrom(field.getType())) {
-					continue;
-				}
-				try {
-					ConstExprPermit.forceAccessible(field);
-					Object value = field.get(env);
-					if (value instanceof ProcessingEnvironment delegate) {
-						return unwrapJavacEnvironment(delegate);
-					}
-				} catch (ReflectiveOperationException ignored) {
-					// try next field
-				}
-			}
-		}
-		return env;
 	}
 
 	static Object javacTask(Object context) throws ReflectiveOperationException {
@@ -70,7 +46,7 @@ final class JavacAccess {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> T getFromContext(Object context, Class<T> type) {
+	public static <T> T getFromContext(Object context, Class<T> type) {
 		try {
 			Method get = context.getClass().getMethod("get", Class.class);
 			forceAccessible(get);
