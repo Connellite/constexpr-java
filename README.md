@@ -70,7 +70,7 @@ public class Exhibit {
     <dependency>
         <groupId>io.github.connellite</groupId>
         <artifactId>constexpr-api</artifactId>
-        <version>0.2.0</version>
+        <version>0.3</version>
     </dependency>
 </dependencies>
 
@@ -79,7 +79,7 @@ public class Exhibit {
         <plugin>
             <groupId>io.github.connellite</groupId>
             <artifactId>constexpr-maven-plugin</artifactId>
-            <version>0.2.0</version>
+            <version>0.3</version>
             <executions>
                 <execution>
                     <id>transform</id>

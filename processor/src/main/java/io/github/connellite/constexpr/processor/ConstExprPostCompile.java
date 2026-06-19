@@ -3,6 +3,7 @@ package io.github.connellite.constexpr.processor;
 import io.github.connellite.constexpr.ConstExprMain;
 import io.github.connellite.constexpr.exec.ConstExprScannerTask;
 import io.github.connellite.constexpr.inspect.ClassMetadata;
+import io.github.connellite.constexpr.util.ConstExprClassLoaderScope;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.tools.Diagnostic;
@@ -99,7 +100,7 @@ final class ConstExprPostCompile {
 			if (!hasPendingConstExpr(outputDir)) {
 				return false;
 			}
-			try (ConstExprClasspath ignored = ConstExprClasspath.configureForOutput(outputDir)) {
+			try (ConstExprClassLoaderScope ignored = ConstExprClasspath.configureForOutput(outputDir)) {
 				new ConstExprMain().execute(outputDir.toAbsolutePath().toString());
 			}
 			return true;

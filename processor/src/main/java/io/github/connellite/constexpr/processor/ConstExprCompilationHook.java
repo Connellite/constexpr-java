@@ -5,6 +5,7 @@ import com.sun.source.util.TaskListener;
 
 import io.github.connellite.constexpr.ConstExprMain;
 import io.github.connellite.constexpr.inspect.ClassMetadata;
+import io.github.connellite.constexpr.util.ConstExprClassLoaderScope;
 
 import javax.tools.JavaFileManager;
 import javax.tools.StandardJavaFileManager;
@@ -80,7 +81,7 @@ final class ConstExprCompilationHook implements TaskListener {
 
 	private void transformDirectory(File outputDir) throws IOException {
 		ConstExprMain.Stats stats;
-		try (ConstExprClasspath ignored = ConstExprClasspath.configure(fileManager)) {
+		try (ConstExprClassLoaderScope ignored = ConstExprClasspath.configure(fileManager)) {
 			stats = new ConstExprMain().execute(outputDir.getAbsolutePath());
 		}
 		long transformed = stats.scanned.stream()
